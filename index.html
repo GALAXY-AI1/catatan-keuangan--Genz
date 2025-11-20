@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Catatan Keuangan — GenZ</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #d9efff;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .top {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin: 0;
+    }
+
+    .pulse {
+      animation: pulseAnim 1.4s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0% { transform: scale(1); color: #007bff; }
+      50% { transform: scale(1.2); color: #ff3b80; }
+      100% { transform: scale(1); color: #007bff; }
+    }
+
+    .animals {
+      font-size: 20px;
+    }
+
+    .subtitle {
+      color: #555;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      flex: 1;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #9cd3ff;
+      border-radius: 8px;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+
+    .primary {
+      background: #007bff;
+      color: white;
+    }
+
+    .ghost {
+      background: transparent;
+      border: 1px solid #007bff;
+    }
+
+    .balance-box {
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+    }
+
+    .highlight strong {
+      color: #ff2a2a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding: 10px;
+      color: #666;
+      font-size: 14px;
+    }
+
+  </style>
+
+</head>
+<body>
+  <main class="container">
+    <header class="top">
+      <h1 class="pulse">
+        🐾 Catatan Keuangan GenZ
+        <span class="animals">🐶🐱🦊🐼</span>
+      </h1>
+      <p class="subtitle">Aplikasi Catatan Keuangan untuk Siswa SMKN 1 Kras</p>
+    </header>
+
+    <section class="card add">
+      <h2>Tambah / Edit Transaksi</h2>
+      <form id="formTx">
+        <input type="hidden" name="id" id="tx_id">
+
+        <div class="row">
+          <label>Tanggal
+            <input type="date" id="t_date" required>
+          </label>
+
+          <label>Waktu
+            <input type="time" id="t_time">
+          </label>
+        </div>
+
+        <label>Judul
+          <input type="text" id="title" required placeholder="Contoh: Jualan pulsa / Makan siang">
+        </label>
+
+        <div class="row">
+          <label>Tipe
+            <select id="type">
+              <option value="income">Pemasukan</option>
+              <option value="expense">Pengeluaran</option>
+            </select>
+          </label>
+
+          <label>Kategori
+            <input type="text" id="category">
+          </label>
+
+          <label>Jumlah (Rp)
+            <input type="number" id="amount" required>
+          </label>
+        </div>
+
+        <label>Catatan
+          <textarea id="note" rows="2"></textarea>
+        </label>
+
+        <div class="actions">
+          <button type="submit" class="btn primary">Simpan</button>
+          <button type="button" id="btnReset" class="btn">Reset</button>
+          <button type="button" id="btnExport" class="btn ghost">Export CSV</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card summary">
+      <div class="balance-box">
+        <div>
+          <strong id="totalIncome">Rp 0</strong>
+          <div>Total Pemasukan</div>
+        </div>
+        <div>
+          <strong id="totalExpense">Rp 0</strong>
+          <div>Total Pengeluaran</div>
+        </div>
+        <div class="highlight">
+          <strong id="balance">Rp 0</strong>
+          <div>Saldo</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card list">
+      <h2>Riwayat Transaksi</h2>
+      <table id="txTable">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Waktu</th>
+            <th>Judul</th>
+            <th>Kategori</th>
+            <th>Tipe</th>
+            <th>Jumlah</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <footer class="footer">
+      Dibuat oleh Adam dan Shintia — support by ChatGPT
+    </footer>
+  </main>
+
+  <script>
+
+    let txList = JSON.parse(localStorage.getItem("transactions") || "[]");
+
+    function saveToLS() {
+      localStorage.setItem("transactions", JSON.stringify(txList));
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector("#txTable tbody");
+      tbody.innerHTML = "";
+
+      txList.forEach((tx, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${tx.date}</td>
+          <td>${tx.time}</td>
+          <td>${tx.title}</td>
+          <td>${tx.category}</td>
+          <td>${tx.type}</td>
+          <td>Rp ${tx.amount}</td>
+          <td>
+            <button onclick="editTx(${i})">Edit</button>
+            <button onclick="deleteTx(${i})">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      calcSummary();
+    }
+
+    function calcSummary() {
+      let income = 0;
+      let expense = 0;
+
+      txList.forEach(tx => {
+        if (tx.type === "income") income += Number(tx.amount);
+        else expense += Number(tx.amount);
+      });
+
+      document.getElementById("totalIncome").textContent = "Rp " + income;
+      document.getElementById("totalExpense").textContent = "Rp " + expense;
+      document.getElementById("balance").textContent = "Rp " + (income - expense);
+    }
+
+    document.getElementById("formTx").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const id = document.getElementById("tx_id").value;
+
+      const tx = {
+        date: document.getElementById("t_date").value,
+        time: document.getElementById("t_time").value,
+        title: document.getElementById("title").value,
+        category: document.getElementById("category").value,
+        type: document.getElementById("type").value,
+        amount: document.getElementById("amount").value,
+        note: document.getElementById("note").value,
+      };
+
+      if (id === "") {
+        txList.push(tx);
+      } else {
+        txList[id] = tx;
+      }
+
+      saveToLS();
+      renderTable();
+      this.reset();
+      document.getElementById("tx_id").value = "";
+    });
+
+    function editTx(i) {
+      const tx = txList[i];
+
+      document.getElementById("tx_id").value = i;
+      document.getElementById("t_date").value = tx.date;
+      document.getElementById("t_time").value = tx.time;
+      document.getElementById("title").value = tx.title;
+      document.getElementById("category").value = tx.category;
+      document.getElementById("type").value = tx.type;
+      document.getElementById("amount").value = tx.amount;
+      document.getElementById("note").value = tx.note;
+    }
+
+    function deleteTx(i) {
+      if (confirm("Hapus transaksi ini?")) {
+        txList.splice(i, 1);
+        saveToLS();
+        renderTable();
+      }
+    }
+
+    document.getElementById("btnReset").onclick = () => {
+      document.getElementById("formTx").reset();
+      document.getElementById("tx_id").value = "";
+    };
+
+    document.getElementById("btnExport").onclick = () => {
+      let csv = "Tanggal,Waktu,Judul,Kategori,Tipe,Jumlah\n";
+      txList.forEach(tx => {
+        csv += `${tx.date},${tx.time},${tx.title},${tx.category},${tx.type},${tx.amount}\n`;
+      });
+
+      const link = document.createElement("a");
+      link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+      link.download = "transaksi.csv";
+      link.click();
+    };
+
+    renderTable();
+
+  </script>
+
+</body>
+</html>
